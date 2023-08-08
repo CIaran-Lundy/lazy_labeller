@@ -28,8 +28,8 @@ from kneed import KneeLocator
 
 class LoadFromDirectory:
 
-    def __init__(self):
-        self.directory = None
+    def __init__(self, directory):
+        self.directory = directory
         self.data = []
         self.labels = []
         self.image_paths = []
@@ -37,20 +37,14 @@ class LoadFromDirectory:
     @staticmethod
     def load(directory):
         data = []
-        labels = []
         paths = []
 
-        sub_class = os.listdir(directory)
-
-        for i, sc in enumerate(sub_class):
-            class_path = f'{src_path}/{sc}'
-            for path in os.listdir(class_path):
-                img = img_to_array(Image.open(f'{class_path}/{path}'))
-                if img.shape == (100, 100, 3):
-                    data.append(img)
-                    labels.append(sc)
-                    paths.append(path)
-        return data, labels, paths
+        for path in os.listdir(directory):
+            img = img_to_array(Image.open(f'{directory}/{path}'))
+            if img.shape == (100, 100, 3):
+                data.append(img)
+                paths.append(path)
+        return data, paths
 
 
 class FeatureExtractor:
@@ -139,43 +133,39 @@ class Clusterer:
         return kl.elbow
 
 
-#if __name__ == "__main__":
+if __name__ == '__main__':
+    data, labels, paths = LoadFromDirectory.load("")
 
-src_path = "training_data2/"
+    fe = FeatureExtractor(data, (100, 100, 3))
+    features = fe.get_features()
 
-data, labels, paths = LoadFromDirectory.load(src_path)
+    reducer = umap.UMAP(random_state=42)
+    reducer.fit(features)
 
-fe = FeatureExtractor(data, (100, 100, 3))
-features = fe.get_features()
+    embedding = reducer.transform(features)
 
-reducer = umap.UMAP(random_state=42)
-reducer.fit(features)
+    clust = Clusterer(embedding)
 
-embedding = reducer.transform(features)
+    cluster_labels = clust.labels
 
-clust = Clusterer(embedding)
+    df = pd.DataFrame(dict(x=embedding[:, 0], y=embedding[:, 1], labels=labels, cluster=cluster_labels, paths=paths))
 
-cluster_labels = clust.labels
+    #fig = px.scatter(df, x='x', y='y', symbol='labels', color='cluster', hover_data=['labels', 'paths'])
+    #fig.show()
 
-df = pd.DataFrame(dict(x=embedding[:, 0], y=embedding[:, 1], labels=labels, cluster=cluster_labels, paths=paths))
+    clusters_df = pd.DataFrame()
+    dfs = df.groupby('cluster')
+    for cluster, d in dfs:
+        d['var'] = np.var(d['x']) / np.var(d['y'])
+        clusters_df = pd.concat([clusters_df, d])
 
-#fig = px.scatter(df, x='x', y='y', symbol='labels', color='cluster', hover_data=['labels', 'paths'])
-#fig.show()
-
-
-clusters_df = pd.DataFrame()
-dfs = df.groupby('cluster')
-for cluster, d in dfs:
-    d['var'] = np.var(d['x']) / np.var(d['y'])
-    clusters_df = pd.concat([clusters_df, d])
-
-grouped = clusters_df.groupby('var')
+    grouped = clusters_df.groupby('var')
 
 
-for i, gdf in grouped:
-    print(i)
-    paths = list(gdf['paths'])
-    print(paths)
-    for path in paths
+    #for i, gdf in grouped:
+    #    print(i)
+    #    paths = list(gdf['paths'])
+    #    print(paths)
+    #    for path in paths
 
 
