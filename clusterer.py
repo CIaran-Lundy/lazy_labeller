@@ -1,19 +1,16 @@
 # for loading/processing the images
 from keras.preprocessing.image import load_img
-from keras.preprocessing.image import img_to_array
+
 
 # models
-from keras.applications.vgg16 import VGG16, preprocess_input
-from keras.applications.resnet50 import ResNet50, preprocess_input
-from keras.models import Model
+
 
 # clustering and dimension reduction
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 # for everything else
-import os
-from PIL import Image
+
 import numpy as np
 import plotly.express as px
 from random import randint
@@ -24,49 +21,6 @@ from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from kneed import KneeLocator
-
-
-class LoadFromDirectory:
-
-    def __init__(self, directory):
-        self.directory = directory
-        self.data = []
-        self.labels = []
-        self.image_paths = []
-
-    @staticmethod
-    def load(directory):
-        data = []
-        paths = []
-
-        for path in os.listdir(directory):
-            img = img_to_array(Image.open(f'{directory}/{path}'))
-            if img.shape == (100, 100, 3):
-                data.append(img)
-                paths.append(path)
-        return data, paths
-
-
-class FeatureExtractor:
-
-    def __init__(self, data, input_shape):
-        self.input_shape = input_shape
-        self.data = data
-        model = ResNet50(include_top=False, input_shape=input_shape)
-        self.model = Model(inputs=model.inputs, outputs=model.layers[-2].output)
-
-    def __extract_features(self, image, model):
-        reshaped_img = image.reshape(1, *self.input_shape)
-        imgx = preprocess_input(reshaped_img)
-        features = model.predict(imgx, use_multiprocessing=True)
-        return features
-
-    def get_features(self):
-        data = []
-        for i, image in enumerate(self.data):
-            feat = self.__extract_features(image, self.model)
-            data.append(feat.flatten())
-        return np.array(data)
 
 
 class Clusterer:
