@@ -1,11 +1,15 @@
 import tkinter as tk
 from pages import *
+from feature_extractors import FeatureExtractor
+from dimension_reducers import UMAPReducer
 
 
 class Controller:
 
     def __init__(self, *pages):
-
+        self.batches = None
+        self.feature_extractor = FeatureExtractor((100, 100, 3))
+        self.reducer = UMAPReducer()
         self.frames = {}
         self.shared_data = {'directory': None}
         self.window = Window()

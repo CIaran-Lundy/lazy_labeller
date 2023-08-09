@@ -6,9 +6,8 @@ import numpy as np
 
 class FeatureExtractor:
 
-    def __init__(self, data, input_shape):
+    def __init__(self, input_shape):
         self.input_shape = input_shape
-        self.data = data
         model = ResNet50(include_top=False, input_shape=input_shape)
         self.model = Model(inputs=model.inputs, outputs=model.layers[-2].output)
 
@@ -18,9 +17,10 @@ class FeatureExtractor:
         features = model.predict(imgx, use_multiprocessing=True)
         return features
 
-    def get_features(self):
-        data = []
-        for i, image in enumerate(self.data):
-            feat = self.__extract_features(image, self.model)
-            data.append(feat.flatten())
-        return np.array(data)
+    def get_features(self, image_data):
+        features = []
+        for image in image_data:
+            feat = self.__extract_features(image['image_array'], self.model)
+            features.append(feat.flatten())
+        return np.array(features)
+

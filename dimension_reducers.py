@@ -1,13 +1,12 @@
 import umap
 from abc import ABC, abstractmethod
 
-class Reducer:
+class UMAPReducer:
 
     def __init__(self):
-        pass
+        self.reducer = umap.UMAP(random_state=42)
 
     def reduce_features(self, features):
-        reducer = umap.UMAP(random_state=42)
-        reducer.fit(features)
-        embedding = reducer.transform(features)
+        self.reducer.fit(features)
+        embedding = self.reducer.transform(features)
         return embedding[:, 0], embedding[:, 1]

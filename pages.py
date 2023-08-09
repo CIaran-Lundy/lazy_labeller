@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
-from clusterer import LoadFromDirectory, FeatureExtractor, Clusterer
+from data_loaders import LoadBatchFromDirectory
+from clusterer import Clusterer
 import threading
 import umap
 import pandas as pd
@@ -137,18 +138,12 @@ class ProcessData(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-
         page_title = ttk.Label(self, text="Processing...", font=LARGEFONT)
         page_title.grid(row=0, column=4, padx=10, pady=10)
-
         back_button = ttk.Button(self, text="back", command=lambda: controller.show_frame(SelectDataPage))
-
         back_button.grid(row=1, column=1, padx=10, pady=10)
-
         continue_button = ttk.Button(self, text="continue", command=lambda: controller.show_frame(SelectDataPage))
-
         continue_button.grid(row=2, column=1, padx=10, pady=10)
-
         reading_message = ttk.Label(self, text="reading data...........[ ]")
         reading_message.grid(row=1, column=4, padx=10, pady=10)
         extracting_message = ttk.Label(self, text="extracting data........[ ]")
@@ -157,37 +152,30 @@ class ProcessData(tk.Frame):
         reducing_message.grid(row=3, column=4, padx=10, pady=10)
         clustering_message = ttk.Label(self, text="clustering data........[ ]")
         clustering_message.grid(row=4, column=4, padx=10, pady=10)
-
-        thread = threading.Thread(target=LoadFromDirectory.load, args=([controller.shared_data['directory']]))
-        thread.start()
-
-        data, paths = LoadFromDirectory.load(controller.shared_data['directory'])
+        if controller.batches is None:
+            controller.batches = LoadBatchFromDirectory(directory=controller.shared_data['directory'], batch_size=2)
+        batch = controller.batches.load_batch()
+        print(batch)
         reading_message = ttk.Label(self, text="reading data...........[X]")
         reading_message.grid(row=1, column=4, padx=10, pady=10)
-
-        fe = FeatureExtractor(data, (100, 100, 3))
-        features = fe.get_features()
+        features = controller.feature_extractor.get_features(batch)
         extracting_message = ttk.Label(self, text="extracting data........[X]")
         extracting_message.grid(row=2, column=4, padx=10, pady=10)
 
-        reducer = umap.UMAP(random_state=42)
-        reducer.fit(features)
-
-        embedding = reducer.transform(features)
+        x_list, y_list = controller.reducer.reduce_features(features)
 
         reducing_message = ttk.Label(self, text="reducing dimensions....[X]")
         reducing_message.grid(row=3, column=4, padx=10, pady=10)
 
-        clust = Clusterer(embedding)
+        clust = Clusterer(x_list, y_list)
 
-        clustering_message = ttk.Label(self,
-                                    text="clustering data........[ ]")
+        clustering_message = ttk.Label(self, text="clustering data........[ ]")
         clustering_message.grid(row=4, column=4, padx=10, pady=10)
 
         cluster_labels = clust.labels
 
         df = pd.DataFrame(
-            dict(x=embedding[:, 0], y=embedding[:, 1], cluster=cluster_labels, paths=paths))
+            dict(x=x_list, y=y_list, cluster=cluster_labels, paths=paths))
 
         controller.shared_data['clustered_data'] = df
 

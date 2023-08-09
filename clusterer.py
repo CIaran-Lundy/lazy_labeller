@@ -1,7 +1,6 @@
 # for loading/processing the images
 from keras.preprocessing.image import load_img
-
-
+from data_loaders import LoadBatchFromDirectory
 # models
 
 
@@ -50,24 +49,6 @@ class Clusterer:
                 groups[cluster].append(file)
 
     @staticmethod
-    # function that lets you view a cluster (based on identifier)
-    def view_cluster(cluster):
-        plt.figure(figsize=(25, 25))
-        # gets the list of filenames for a cluster
-        files = groups[cluster]
-        # only allow up to 30 images to be shown at a time
-        if len(files) > 30:
-            print(f"Clipping cluster size from {len(files)} to 30")
-            files = files[:29]
-        # plot each image in the cluster
-        for index, file in enumerate(files):
-            plt.subplot(10, 10, index+1)
-            img = load_img(file)
-            img = np.array(img)
-            plt.imshow(img)
-            plt.axis('off')
-
-    @staticmethod
     def find_k(x):
         sse = []
         list_k = list(range(3, 50))
@@ -87,33 +68,37 @@ class Clusterer:
         return kl.elbow
 
 
-if __name__ == '__main__':
-    data, labels, paths = LoadFromDirectory.load("")
-
-    fe = FeatureExtractor(data, (100, 100, 3))
-    features = fe.get_features()
-
-    reducer = umap.UMAP(random_state=42)
-    reducer.fit(features)
-
-    embedding = reducer.transform(features)
-
-    clust = Clusterer(embedding)
-
-    cluster_labels = clust.labels
-
-    df = pd.DataFrame(dict(x=embedding[:, 0], y=embedding[:, 1], labels=labels, cluster=cluster_labels, paths=paths))
-
-    #fig = px.scatter(df, x='x', y='y', symbol='labels', color='cluster', hover_data=['labels', 'paths'])
-    #fig.show()
-
-    clusters_df = pd.DataFrame()
-    dfs = df.groupby('cluster')
-    for cluster, d in dfs:
-        d['var'] = np.var(d['x']) / np.var(d['y'])
-        clusters_df = pd.concat([clusters_df, d])
-
-    grouped = clusters_df.groupby('var')
+#if __name__ == '__main__':
+#    batch_size = 10
+#
+#    batches = LoadBatchFromDirectory(directory='/', batch_size=batch_size)
+#
+#    for batch in batches.load_batches():
+#
+#    fe = FeatureExtractor(batch, (100, 100, 3))
+#    features = fe.get_features()
+#
+#    reducer = umap.UMAP(random_state=42)
+#    reducer.fit(features)
+#
+#    embedding = reducer.transform(features)
+#
+#    clust = Clusterer(embedding)
+#
+#    cluster_labels = clust.labels
+#
+#    df = pd.DataFrame(dict(x=embedding[:, 0], y=embedding[:, 1], labels=labels, cluster=cluster_labels, paths=paths))
+#
+#    #fig = px.scatter(df, x='x', y='y', symbol='labels', color='cluster', hover_data=['labels', 'paths'])
+#    #fig.show()
+#
+#    clusters_df = pd.DataFrame()
+#    dfs = df.groupby('cluster')
+#    for cluster, d in dfs:
+#        d['var'] = np.var(d['x']) / np.var(d['y'])
+#        clusters_df = pd.concat([clusters_df, d])
+#
+#    grouped = clusters_df.groupby('var')
 
 
     #for i, gdf in grouped:
